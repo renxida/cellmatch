@@ -1,0 +1,12 @@
+170127 Spent 2 hours on the damn thing, but I learned to import ND2 files into python. I might be importing the old version, though, so it might not work on the newest type. I should really build a git repo for my investigations.
+
+Evening: found that the colors in the matplotlib plots were actually introduced by pyplot. The actual channels had no color, which explains why they were number matrices. The next step would be to try to use https://github.com/guillambert/celltracker/blob/master/celltracker.py to track the cell and to use the blob-tracker to track cells. I need to learn about microscope image preprocessing and other things necessary for cell-tracking.
+
+170128 Read about image matching, and compared two images at the beginning and the end of a ICC video. Found graph-based simultaneous segmenting and matching. Maybe not segmenting, but just graph-based matching. Could manually mark out corresponding cells, and use neighbors + clockwise/counterclockwise to match cells. Shape and size information will be less useful. The boundary intensity could potentially be used to help describe a cell, since the dye concentrations around each cell tends to remain pretty stable.
+
+170129 Detect, describe, match.
+
+Voronoi? Watershed?
+
+Bilateral filter very useful for edges.
+

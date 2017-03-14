@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1485545468873.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "CDA5C58B",
+    "lastKnownWriteTime" : 1485545481,
+    "last_content_update" : 1485545481979,
+    "path" : "~/imaging_investigations/load_disgaly.r",
+    "project_path" : "load_disgaly.r",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
