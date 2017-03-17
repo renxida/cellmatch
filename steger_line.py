@@ -10,7 +10,7 @@ import os
 sigma = 4.5
 #%%
 LINE_TYPE = 1 # or -1 for dark ridge (vallye) detection
-os.chdir('/home/cedar/cellmatch')
+os.chdir('/home/xren/cellmatch')
 img = imread('./a.jpg').astype(np.float64)
 PI = np.pi
 TAU = 2*np.pi
@@ -138,68 +138,98 @@ nhc =  offset_x.astype(np.int)
 #assert np.all(neighborhood_offsets == np.stack((nhr, nhc), axis = 1))
 neighborhood_offsets = np.stack((nhr, nhc), axis = 1)
 # TAU = 2PI
-def find_neighborhood(head): #TODO: inspect
+def angle_difference(a1, a2):
+    '''
+    returns: smallest signed difference between the two angles
+    see http://stackoverflow.com/questions/1878907/the-smallest-difference-between-2-angles
+    '''
+    return (a1-a2 + PI) % TAU - PI
+def find_neighborhood(head):
+    '''
+    returns: appropriate neighborhood of point.
+    Only returns neighbors that are in grid. Returns empty np.ndarray when none
+    are in grid.
+    '''
     head_orientation = orientation[head]
-    angdiff_findneighbors = np.abs((head_angle-neighborhood_angles+PI)%(TAU)-PI)
-    closest_index = np.argsort(angdiff_findneighbors)[0:3]
+    angdiff = np.abs(angle_difference(head_orientation,neighborhood_angles))
+    closest_index = np.argsort(angdiff)[0:3]
     neighborhood = neighborhood_offsets[closest_index] + head
+    in_grid = np.logical_and(np.all(0<=neighborhood, axis = 1),
+                             np.all(   neighborhood<orientation.shape, axis = 1)
+                            )
+    neighborhood = neighborhood[np.where(in_grid)]
     return neighborhood
 
-def best_neighbor(head): #TODO: inspect
+def best_neighbor(head, reverse):
     '''
     takes: coordinate head, ndarray of coordinates neighbors
     returns: a number representing how well neighbor and head fit in a line.
     The greater the better.
+    If reverse, neighbors are found in the opposite direction to the orientation
+    of head.
     '''
     # find neighborhood
     neighborhood = find_neighborhood(head)
+    if len(neighborhood) == 0:
+        return None
     # not sure what roles px, py are supposed to play. Just using pixel positions
-    position_difference     = np.sqrt((head[0]-neighbors[:,0])**2 + (head[1]-neighbors[:,1])**2)
+    position_difference     = np.sqrt((head[0]-neighborhood[:,0])**2 + (head[1]-neighborhood[:,1])**2)
     
-    head_orientation = orientation[head]
+    head_orientation = orientation[head] if not reverse else (orientation[head]+PI)%TAU
     neighborhood_orientations = orientation[tuple(neighborhood.T)]
     
     orientation_difference  = np.abs((head_orientation-neighborhood_orientations+PI)%TAU-PI)
     diff = position_difference + 1*orientation_difference
-    return neighborhood[np.argmin(diff)]
+    best_neighbor = neighborhood[np.argmin(diff)]
+    if remaining_point_line_strength[tuple(best_neighbor)]== 0:
+        return None
+    return tuple(best_neighbor)
 
-def accumulate_points(seed, forward): #TODO? argumants may contain a threshold?
+def accumulate_points(seed, reverse): #TODO? argumants may contain a threshold?
     '''
-    returns a list of points added
+    returns an iterator of points added
     if   forward: normal of seed is on *right* of procession
     if ! forward: normal of seed is on *left*  of procession
     '''
-    added_points = []
     head = seed
-    while 1: # 1 = True
-        angle = pangle[head]
-        if not forward:
-            angle = (angle - np.pi)%(2*np.pi) # -180deg and put back into range
-        ntc = neighbors_to_consider(*head, angle)
+    while 1:
+        neck = head
+        head = best_neighbor(head, reverse) #assumes neighbor is in 
+        if head is None:
+            break
+        print(head)
+        if remaining_point_line_strength[head] ==0:
+            break
+        # fix orientation of head to be on same side as neck
+        if abs(angle_difference(orientation[neck], orientation[head])) > TAU/4: # which means that the orientations are not together
+            # this code rotates the orientations only while the following code
+            # also fixes the normals
+            # orientation[head] = (orientation[head] - TAU/2) % TAU
+            nx[head], ny[head] = -nx[head], -ny[head]
+            orientation[head] = (np.arctan2(ny[head], nx[head]) + TAU)%(PI)
+            assert abs(angle_difference(orientation[neck], orientation[head])) <= TAU/4
+        remaining_point_line_strength[head] = 0
+        yield head
         
         
+def getline(seed):
+    forward_points = list(accumulate_points(seed, reverse = False))
+    reverse_points = list(accumulate_points(seed, reverse = True))
+    reverse_points.reverse()
+    linepoints = reverse_points + [seed] + forward_points
+    return linepoints
 # TODO: find out if we need to interpolate the 2nd derivative for px, py
 # instead of pixel position. 
 THRESHOLD_NEWLINE = 10 # threshold for derivative to initiate a new line at one point
 # points to add have evs. point done don't have evs
 remaining_point_line_strength= np.abs(is_linepoint*ev)
 line_ids = np.full(ev.shape, -1, dtype = np.int64)
-orientation = (np.arctan2(ny, nx) + (np.pi/2))%(2*np.pi) #parallel angle = normal angle + 90deg
+orientation = (np.arctan2(ny, nx) + TAU)%TAU #parallel angle = normal angle + 90deg
 npoints = np.count_nonzero(remaining_point_line_strength)
-while npoints>0:
-    seed = np.unravel_index(remaining_point_line_strength.argmax(), dims = remaining_point_line_strength.shape)
-    if line_ids[seed]!=-1:
-        raise ValueError('attempted to start line on point on another line')
-    # set id, and mark as done.
-    line_ids[seed] = npoints
-    remaining_point_line_strength[seed] = 0
-    npoints -= 1
-    
-    
-    
-    
-    
 
+#seed = np.argmax(remaining_point_line_strength)
+#seed = np.unravel_index(seed, remaining_point_line_strength.shape)
 
+getline((255, 81))
 
 #%%
