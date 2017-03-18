@@ -157,7 +157,9 @@ def find_neighborhood(head):
     in_grid = np.logical_and(np.all(0<=neighborhood, axis = 1),
                              np.all(   neighborhood<orientation.shape, axis = 1)
                             )
-    neighborhood = neighborhood[np.where(in_grid)]
+    is_local_maximum = remaining_point_line_strength[tuple(neighborhood.T)] != 0
+    neighborhood = neighborhood[np.where(np.logical_and(in_grid, is_local_maximum))]
+    
     return neighborhood
 
 def best_neighbor(head, reverse):
@@ -181,8 +183,6 @@ def best_neighbor(head, reverse):
     orientation_difference  = np.abs((head_orientation-neighborhood_orientations+PI)%TAU-PI)
     diff = position_difference + 1*orientation_difference
     best_neighbor = neighborhood[np.argmin(diff)]
-    if remaining_point_line_strength[tuple(best_neighbor)]== 0:
-        return None
     return tuple(best_neighbor)
 
 def accumulate_points(seed, reverse): #TODO? argumants may contain a threshold?
@@ -198,16 +198,15 @@ def accumulate_points(seed, reverse): #TODO? argumants may contain a threshold?
         if head is None:
             break
         print(head)
-        if remaining_point_line_strength[head] ==0:
-            break
         # fix orientation of head to be on same side as neck
         if abs(angle_difference(orientation[neck], orientation[head])) > TAU/4: # which means that the orientations are not together
             # this code rotates the orientations only while the following code
             # also fixes the normals
             # orientation[head] = (orientation[head] - TAU/2) % TAU
+            print('fixing angle')
             nx[head], ny[head] = -nx[head], -ny[head]
-            orientation[head] = (np.arctan2(ny[head], nx[head]) + TAU)%(PI)
-            assert abs(angle_difference(orientation[neck], orientation[head])) <= TAU/4
+            orientation[head] = (np.arctan2(ny[head], nx[head]) + PI)%(TAU)
+        assert abs(angle_difference(orientation[neck], orientation[head])) <= TAU/4
         remaining_point_line_strength[head] = 0
         yield head
         
@@ -230,6 +229,22 @@ npoints = np.count_nonzero(remaining_point_line_strength)
 #seed = np.argmax(remaining_point_line_strength)
 #seed = np.unravel_index(seed, remaining_point_line_strength.shape)
 
-getline((255, 81))
 
-#%%
+
+#%% Test case for line-linking
+rt = 0
+up = PI/2
+lt = PI
+dn = 3*PI/2
+remaining_point_line_strength = np.array([
+[0,0,0,0],
+[1,1,1,1],
+[0,1,1,0],
+[0,0,0,0],
+], dtype = np.uint)
+orientation = np.array([
+[up, lt, up, rt],
+[rt, dn, rt, rt],
+[lt, rt, up, dn],
+[dn, dn, dn, dn],
+], dtype = np.float64)
