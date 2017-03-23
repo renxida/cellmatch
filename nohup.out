@@ -1517,3 +1517,4 @@ Traceback (most recent call last):
   File "/usr/local/lib/python3.5/dist-packages/spyder/widgets/browser.py", line 61, in __init__
     web_page = WebPage(self)
 KeyboardInterrupt
+Handling signal: 15
