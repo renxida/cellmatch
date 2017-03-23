@@ -1,0 +1,10 @@
+Test Data Needed:
+-ROI list with center-xy on Ca+ images (x)
+-ROI list with center-xy on FISHimages (_) need to make by self
+-ROI binary on either image.
+
+When data acquired:
+-Verify ROI ids and center coordinates correspond
+-Be able to check if two points belong to the same connected component
+-Streamline control point selection and model fitting
+-LET IT ROLL BABY
